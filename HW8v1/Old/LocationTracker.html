@@ -1,0 +1,141 @@
+﻿<!DOCTYPE html>
+<html>
+  <head>
+    <title>Location Tracker</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+        /* Always set the map height explicitly to define the size of the div
+         * element that contains the map. */
+      #map {
+        height: 500px;
+    }
+        /* Optional: Makes the sample page fill the window. */
+      html, body {
+        height: 500px;
+        width: 500px;
+        margin: 0;
+        padding: 0;
+    }
+    </style>
+  </head>
+  <body onload="initialize()">
+    <div id="map"></div>
+    <script>
+
+    var positions = [];
+    var map;
+     
+    function initialize()
+    {
+        // disable the stop tracking button
+        var stopButton = document.getElementById("StopButton");
+        stopButton.disabled = true;
+    }
+
+    function ShowPosition(pos)
+    {
+        // display the current position and add it to the array
+	    document.getElementById("output").innerHTML ="Position (" + (new Date(pos.timestamp)) +"): " + pos.coords.latitude + "," + pos.coords.longitude;
+	    positions.push(new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
+    }
+
+    function ShowPositionError(err)
+    {
+	    document.getElementById("output").innerHTML = "Error: " + err.message;
+    }
+
+    function startTracking()
+    {
+        if (!navigator.geolocation)
+	    {
+		    document.getElementById("output").innerHTML = "Browser doesn't support geolocation!";
+		    return;
+	    }
+
+        // disable the start tracking button
+        var startButton = document.getElementById("StartButton");
+        startButton.disabled = true;
+
+        // enable the stop tracking button
+        var stopButton = document.getElementById("StopButton");
+        stopButton.disabled = false;
+
+        // track the user's locations
+	    document.getElementById("output").innerHTML = "Monitoring position changes...";
+	    navigator.geolocation.watchPosition(ShowPosition, ShowPositionError);
+    }
+
+    function stopTracking()
+    {
+        // enable the start tracking button
+        var startButton = document.getElementById("StartButton");
+        startButton.disabled = false;
+
+        // disable the stop tracking button
+        var stopButton = document.getElementById("StopButton");
+        stopButton.disabled = true;
+
+        // loop through the gathered coordinates
+        for (var i = 0; i < positions.length; i++)
+        {
+            // print out the coordinates
+            console.log("position[" + i + "] = " + positions[i]);
+        }
+
+        //positions.push(new google.maps.LatLng(46.737589, -117.1615176));
+        //positions.push(new google.maps.LatLng(46.7376, -117.1615176));
+        //positions.push(new google.maps.LatLng(46.737605, -117.1620176));
+
+        // create the map based on the path
+        initMap();
+
+        // clear the positions in the array when done
+        positions = [];
+    }
+
+    function initMap() 
+    {
+        map = new google.maps.Map(document.getElementById('map'), {
+            center: positions[0],
+            zoom: 15
+        });
+
+        // create a path based on the user's locations
+        var userPath = new google.maps.Polyline({
+            path: positions,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeWeight: 2
+        });
+
+        // add the path to the map
+        userPath.setMap(map);
+
+        //var newMap = { map: map, path: userPath };
+        //localStorage.setItem("map1", newMap);
+    }
+
+    function displaySavedMaps()
+    {
+        var lastMap = localStorage.getItem("map1");
+        console.log(lastMap);
+        if (lastMap !== null)
+        {
+            positions = lastMap[path];
+            initMap();
+        }
+    }
+
+    </script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAUEG6dl5X31jpcUvLHA4g7LxoSCLtPSpc"
+    async defer></script>
+    <div id="output">Ready to track...</div>
+    <div style="width:500px;">
+        <input id="StartButton" type="button" value="Start tracking" onclick="startTracking()" />
+        <input id="StopButton" type="button" value="Stop tracking" onclick="stopTracking()" />
+        <input id="DisplayButton" type="button" value="Display saved maps" onclick="displaySavedMaps()" />
+    </div>
+  </body>
+</html>

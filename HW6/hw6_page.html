@@ -1,0 +1,236 @@
+<!-- Alexander Lao -->
+<!-- 11481444 -->
+
+<!-- If you use additional .js files, make sure to reference them in this file and -->
+<!-- include them in your submission (zip all files together). -->
+<html>
+    
+<script>
+    
+// Helpful links:
+// https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+// https://developer.mozilla.org/en-US/docs/Web/API/CanvasRenderingContext2D
+    
+var g_animating = false;
+var g_colors = ["red", "green", "blue", "yellow", "cyan", "magenta", "orange", "white"];
+var g_statics = new Array();
+var g_dynamics = new Array();
+var minStaticRadius = 20;
+var maxStaticRadius = 40;
+var minDynamicRadius = 10;
+var maxDynamicRadius = 20;
+var minVelocity = -5;
+var maxVelocity = 5;
+var canvasWidth = 800;
+var canvasHeight = 600;
+
+function StaticObject(x, y)
+{
+    this.x = x;
+    this.y = y;
+    this.radius = getRandomIntInclusive(minStaticRadius, maxStaticRadius);
+    this.color = g_colors[getRandomIntInclusive(0, 7)];
+}
+
+function DynamicObject(x, y)
+{
+    this.x = x;
+    this.y = y;
+    this.radius = getRandomIntInclusive(minDynamicRadius, maxDynamicRadius);
+    this.color = g_colors[getRandomIntInclusive(0, 7)];
+
+    var randomX = getRandomIntInclusive(minVelocity, maxVelocity);
+    var randomY = getRandomIntInclusive(minVelocity, maxVelocity);
+
+    // don't allow the xVelocity and yVelocity to both be zero
+    while (randomX == 0 && randomY == 0)
+    {
+        randomX = getRandomIntInclusive(minVelocity, maxVelocity);
+        randomY = getRandomIntInclusive(minVelocity, maxVelocity);
+    }
+
+    this.xVelocity = randomX;
+    this.yVelocity = randomY;
+}
+
+function init()
+{
+    // Setup event listeners
+    var canvas = document.getElementById("drawHere");
+    canvas.addEventListener("click", canvasClick);
+    
+    // Do initial rendering
+    render();
+}
+
+function btnStartStopClick()
+{
+    // Toggle animation on/off
+    // When stopping the animation, all objects freeze in their current position
+    // When resuming the animation, all objects move from their current position (i.e.
+    // they don't all of a sudden jump halfway across the canvas, they move from their
+    // frozen location).
+    g_animating = !g_animating;
+    if (g_animating) { render(); }
+}
+
+function canvasClick(event)
+{
+    // Click without shift key == create new dynamic object
+	// Click with shift key == create new static object
+    // Your code here
+    var canvas = document.getElementById("drawHere");
+    var ctx = canvas.getContext("2d");
+
+    var rect = canvas.getBoundingClientRect();              // get the bounding box of the rectangle
+    var newX = event.clientX - rect.left;                   // center the new circle by subtracting the boundaries
+    var newY = event.clientY - rect.top;                    // of the bounding box from the location of the mouse click
+
+    // if the shift key was held when clicked
+    if (event.shiftKey)
+    {
+        // create a new static object
+        // and display it on screen
+        var newStatic = new StaticObject(newX, newY);
+        drawStatic(newStatic);
+        g_statics.push(newStatic);
+    }
+    else
+    {
+        // create a new dynamic object
+        // and display it on screen
+        var newDynamic = new DynamicObject(newX, newY);
+        drawDynamic(newDynamic);
+        g_dynamics.push(newDynamic);
+    }
+}
+                            
+function render()
+{
+    var canvas = document.getElementById("drawHere");
+    var ctx = canvas.getContext("2d");
+
+    // clear the canvas of old objects and redraw it
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    ctx.fillStyle = "rgb(128, 128, 128)";
+    ctx.fillRect(0, 0, canvasWidth, canvasHeight);
+
+    // loop through the array of static objects
+    for (var i = 0; i < g_statics.length; i++)
+    {
+        // redraw the static objects
+        drawStatic(g_statics[i]);
+    }
+
+    // loop through the array of dynamic objects
+    for (var i = 0; i < g_dynamics.length; i++)
+    {
+        // store the current dynamic object
+        // in a local variable for readability
+        var curr = g_dynamics[i];
+
+        // update the position of each dynamic object
+        curr.x += curr.xVelocity;
+        curr.y += curr.yVelocity;
+
+        // redraw the dynamic object and check for collisions
+        drawDynamic(curr);
+        checkForCollisions(curr);
+    }
+    
+    // Set timeout to render next frame
+    if (g_animating)
+        window.setTimeout(function() { render(); }, 20);
+}
+
+// returns a random int between [min, max]
+// from https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/random
+function getRandomIntInclusive(min, max)
+{
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function drawStatic(obj)
+{
+    var canvas = document.getElementById("drawHere");
+    var ctx = canvas.getContext("2d");
+
+    // draw the ball
+    ctx.fillStyle = obj.color;
+    ctx.beginPath();
+    ctx.arc(obj.x, obj.y, obj.radius, 0, 2 * Math.PI);
+    ctx.fill();
+
+    // draw the "S"
+    ctx.fillStyle = "black";
+    ctx.font = "24px Calibri"
+    ctx.fillText("S", obj.x - 5, obj.y + 5);
+}
+
+function drawDynamic(obj)
+{
+    var canvas = document.getElementById("drawHere");
+    var ctx = canvas.getContext("2d");
+
+    // draw the ball
+    ctx.fillStyle = obj.color;
+    ctx.beginPath();
+    ctx.arc(obj.x, obj.y, obj.radius, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+function checkForCollisions(obj)
+{
+    // check if the obj hit the left or right border of the canvas
+    if (obj.x < obj.radius || obj.x > canvasWidth - obj.radius)
+    {
+        // set the xVelocity to its inverse
+        obj.xVelocity *= -1;
+    }
+
+    // check if the obj hit the top or bottom border of the canvas
+    if (obj.y < obj.radius || obj.y > canvasHeight - obj.radius)
+    {
+        // set the yVelocity to its inverse
+        obj.yVelocity *= -1;
+    }
+
+    // loop through the array of static objects
+    for (var i = 0; i < g_statics.length; i++)
+    {
+        // store the current static object
+        // in a local variable for readability
+        var curr = g_statics[i];
+
+        // calculate the distance between the dynamic
+        // and static object
+        var dx = obj.x - curr.x;
+        var dy = obj.y - curr.y;
+        var distance = Math.sqrt(dx * dx + dy * dy);
+
+        // check if the obj collided with a static object
+        if (distance < obj.radius + curr.radius)
+        {
+            // calculations to determine the resulting velocity
+            // from http://ericleong.me/research/circle-circle/#static-circle-circle-collision-response
+            var nx = (obj.x - curr.x) / distance;
+            var ny = (obj.y - curr.y) / distance;
+            var p = 2 * (obj.xVelocity * nx + obj.yVelocity * ny);
+
+            obj.xVelocity = obj.xVelocity - p * nx;
+            obj.yVelocity = obj.yVelocity - p * ny;
+        }
+    }
+}
+
+</script>
+<body onload="init()">
+    <h3>HW6 - Canvas Animation v1.0</h3>
+    <canvas id="drawHere" width="800" height="600"></canvas>
+    <br>
+    <input type="button" onclick="btnStartStopClick()" value="Start/Stop Animation"/>
+    <br>
+    Click to add a dynamic object, hold shift and click to add a static object
+<html>

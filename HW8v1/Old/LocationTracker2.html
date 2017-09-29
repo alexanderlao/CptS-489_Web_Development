@@ -1,0 +1,340 @@
+﻿<!DOCTYPE html>
+<html>
+    <head>
+        <title>Location Tracker</title>
+        <meta name="viewport" content="initial-scale=1.0">
+            <meta charset="utf-8">
+                <style>
+                    /* Always set the map height explicitly to define the size of the div
+                     * element that contains the map. */
+                #map {
+                    height: 96%;
+                }
+                /* Optional: Makes the sample page fill the window. */
+                html, body {
+                    height: 96%;
+                    width:;
+                    100% margin: 0;
+                    padding: 0;
+                }
+                </style>
+                </head>
+    <body onload="initialize()">
+        <div id="map"></div>
+        <script>
+            var positions;
+            var map, infoWindow, infoWindowStarting;
+            var geo_options = {
+                enableHighAccuracy: true
+            };
+        var marker;
+        var markerList;
+        var stopButton;
+        var resetButton;
+        var loadButton;
+        var startButton;
+        var saveButton;
+        var lineCoordinatesPath;
+        var mapSaver;
+        var iter;
+      
+        function initialize() {
+            positions = [];
+            markerList = [];
+            if (mapSaver == undefined)
+            {
+                mapSaver = [];
+            }
+           
+            iter = 0;
+            stopButton = document.getElementById("StopButton");
+            resetButton = document.getElementById("Reset");
+            startButton = document.getElementById("StartButton");
+            saveButton = document.getElementById("MapSaverButton");
+            loadButton = document.getElementById("LoadButton");
+            map = new google.maps.Map(document.getElementById('map'), { center: new google.maps.LatLng(46.86019101567027, -119.8828125), zoom: 2 });
+            infoWindow = new google.maps.InfoWindow;
+            infoWindowStarting = new google.maps.InfoWindow;
+            if (!navigator.geolocation) {
+                handleLocationError(false, infoWindow, map.getCenter())
+            }
+            else {
+                navigator.geolocation.getCurrentPosition(initialPosition, handleLocationError(true,infoWindow,map.getCenter(),geo_options));
+            }
+            stopButton.disabled = true;
+            resetButton.disabled = true;
+            startButton.disabled = false;
+            saveButton.disabled = true;
+            resetButton.disabled = true;
+            if (mapSaver.length != 0) {
+                loadButton.disabled = false;
+            }
+            else {
+                loadButton.disabled = true;
+            }
+          //(  CalibrateButton.disabled = false;
+            
+        }
+        /*
+        function setMarkerOnAll(map)
+        {
+            for(var i = 0; i < markerList.length;i++)
+            {
+                markerList[i].setMap(map);
+            }
+        }
+        
+        function clearMarker()
+        {
+            setMarkerOnAll(null);
+            markerList = [];
+        }
+        */
+        function setLineOn(map)
+        {
+            lineCoordinatesPath.setMap(map);
+        }
+        
+        function clearPath()
+        {
+            if (lineCoordinatesPath != null)
+            {
+                setLineOn(null);
+            }
+            
+            positions = [];
+        }
+        
+        // the smooth zoom function
+        function smoothZoom (map, max, cnt) {
+            if (cnt >= max) {
+                return;
+            }
+            else {
+                z = google.maps.event.addListener(map, 'zoom_changed', function(event){
+                                                  google.maps.event.removeListener(z);
+                                                  smoothZoom(map, max, cnt + 1);
+                                                  });
+                                                  setTimeout(function(){map.setZoom(cnt)}, 130);
+            }
+        }
+        
+        function initialPosition(position) {
+            var pos = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude
+            };
+            marker = new google.maps.Marker({
+                                            position: pos,
+                                            map: map,
+                                            title: 'User Starting Location'
+                                            });
+                                          //  map.panTo(pos);
+                                            marker.addListener('click', function() {
+                                                               smoothZoom(map, 18, map.getZoom());
+                                                               map.setCenter(marker.getPosition());
+                                                               });
+            positions.push(new google.maps.LatLng(pos.lat,pos.lng));
+            infoWindowStarting.setPosition(pos);
+            infoWindowStarting.setContent("User Starting Point")
+            
+        }
+        
+        function handleLocationError(browserHasGeolocation, infoWindow, pos) {
+            infoWindow.setPosition(pos);
+            infoWindow.setContent(browserHasGeolocation ?
+                                  'Tap on Marker to Zoom' :
+                                  'Error: Your browser doesn\'t support geolocation.');
+                                  infoWindow.open(map);
+        }
+        function ShowPosition(pos)
+        {
+            // display the current position and add it to the array
+            document.getElementById("output").innerHTML ="Position (" + (new Date(pos.timestamp)) +"): " + pos.coords.latitude + "," + pos.coords.longitude;
+          
+         // if(positions.length != 0)
+         // {
+              //var x =  positions[positions.length - 1].lat() - pos.coords.latitude;
+              // var dX = Math.abs(positions[positions.length - 1].lat - pos.coords.latitude) * Math.abs(positions[positions.length - 1].lat - pos.coords.latitude)
+             /*
+              var radius = Math.sqrt((Math.abs(positions[positions.length - 1].lat() - pos.coords.latitude)* Math.abs(positions[positions.length - 1].lat() - pos.coords.latitude)) +(Math.abs(positions[positions.length - 1].lng() - pos.coords.longitude)* Math.abs(positions[positions.length - 1].lng() - pos.coords.longitude)))
+              if(radius > 1)
+              {
+                  positions.push(new google.maps.LatLng(pos.coords.longitude,pos.coords.longitude));
+              }
+              console.log("Radius: " + radius);
+              
+          }
+          else
+          {
+            positions.push(new google.maps.LatLng(pos.coords.latitude, pos.coords.longitude));
+          }
+          */
+        var radius = Math.sqrt((Math.abs(positions[positions.length - 1].lat() - pos.coords.latitude)* Math.abs(positions[positions.length - 1].lat() - pos.coords.latitude)) +(Math.abs(positions[positions.length - 1].lng() - pos.coords.longitude)* Math.abs(positions[positions.length - 1].lng() - pos.coords.longitude)))
+        if(radius > 0.00005)
+        {
+            redraw(pos.coords.latitude, pos.coords.longitude);
+        }
+        console.log("Radius: " + radius);
+        
+        }
+        
+        function ShowPositionError(err)
+        {
+            document.getElementById("output").innerHTML = "Error: " + err.message;
+        }
+        function startTracking()
+        {
+            var markerS = new google.maps.Marker({
+                position: positions[0],
+                map: map,
+                title: 'User Starting Location'
+            });
+            markerS.setMap(map);
+            //marker.setMap(map);
+            if (!navigator.geolocation)
+            {
+                document.getElementById("output").innerHTML = "Browser doesn't support geolocation!";
+                return;
+            }
+            // disable the start tracking button
+            startButton.disabled = true;
+            
+            // enable the stop tracking button/Users/minh/Desktop/LocationTracker.html
+            stopButton.disabled = false;
+            resetButton.disabled = true;
+            
+            // track the user's locations
+            document.getElementById("output").innerHTML = "Monitoring position changes...";
+            navigator.geolocation.watchPosition(ShowPosition, ShowPositionError,geo_options);
+            infoWindowStarting.open(map)
+        //    CalibrateButton.disabled = true;
+        }
+        
+        function stopTracking()
+        {
+            var markerF = new google.maps.Marker({
+                position: positions[positions.length - 1],
+                map: map,
+                title: 'User Final Location'
+            });
+            markerF.setMap(map);
+            // enable the start tracking button
+            startButton.disabled = false;
+            
+            // disable the stop tracking button
+            stopButton.disabled = true;
+            
+            // loop through the gathered coordinates
+            for (var i = 0; i < positions.length; i++)
+            {
+                // print out the coordinates
+                console.log("position[" + i + "] = " + positions[i]);
+            }
+            resetButton.disabled = false;
+            saveButton.disabled = false;
+            //CalibrateButton.disabled = false;
+        }
+        
+        var redraw = function(lati,long) {
+            marker.setPosition({lat:lati, lng:long, alt:0});
+            map.panTo(marker.getPosition());
+            marker.title = 'User Current Position';
+            if(startButton.disabled && !stopButton.disabled)
+            {
+            positions.push(new google.maps.LatLng(lati, long));
+            lineCoordinatesPath = new google.maps.Polyline({
+                                                               path: positions,
+                                                               geodesic: true,
+                                                               strokeColor: '#FF0000',
+                                                               strokeOpacity: 1.0,
+                                                               strokeWeight: 4
+                                                               });
+                                                               setLineOn(map)
+                                                               infoWindowStarting.close();
+            }
+        };
+        
+        function reset()
+        {
+            resetButton.disabled = true;
+           // clearMarker();
+            clearPath();
+            positions = [];
+            lineCoordinates = null;
+            initialize();
+        }
+        function saveMap()
+        {
+            if (positions.length != 0)
+            {
+                mapSaver.push(positions);
+                loadButton.disabled = false;
+                saveButton.disabled = true;
+            }
+        }
+        function handleLocationErrorCab(browserHasGeolocation, infoWindow, pos) {
+            infoWindow.setPosition(pos);
+            infoWindow.setContent(browserHasGeolocation ?
+                                  'Calibrate' :
+                                  'Error: Your browser doesn\'t support geolocation.');
+                                  infoWindow.open(map);
+        }
+        
+        function loader()
+        {
+            resetButton.disabled = false;
+            positions = mapSaver[iter];
+            map = new google.maps.Map(document.getElementById('map'), { center: new google.maps.LatLng(positions[0].lat(), positions[0].lng()), zoom: 18 });
+            var markerS = new google.maps.Marker({
+                position: positions[0],
+                map: map,
+                title: 'User Starting Location'
+            });
+            markerS.setMap(map);
+            var markerF = new google.maps.Marker({
+                position: positions[positions.length -1],
+                map: map,
+                title: 'User Final Location'
+            });
+            markerF.setMap(map);
+            marker = new google.maps.Marker({
+                position: positions[positions.length -1],
+                map: map,
+                title: 'User Starting Location'
+            });
+          //  map.panTo(positions[0]);
+            lineCoordinatesPath = new google.maps.Polyline({
+                path: positions,
+                geodesic: true,
+                strokeColor: '#FF0000',
+                strokeOpacity: 1.0,
+                strokeWeight: 4
+            });
+            setLineOn(map)
+            infoWindowStarting.close()
+            if (iter < mapSaver.length)
+            {
+                iter++;
+            }
+            if (iter == mapSaver.length) {
+                iter = 0;
+            }
+        }
+   
+            </script>
+        <script async defer
+            src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAjBqK524XM2z1uw_3gU6FW07rFhkD9SpI&callback=initialize"></script>
+        <div id="output">Ready to track...</div>
+        <div style="width:500px;">
+            <input id="StartButton" type="button" value="Start tracking" onclick="startTracking()" />
+            <input id="StopButton" type="button" value="Stop tracking" onclick="stopTracking()" />
+            <input id="Reset" type="button" value="Reset" onclick="reset()" />
+            <input id="MapSaverButton" type="button" value="Save" onclick="saveMap()" />
+            <input id="LoadButton" type="button" value="Load" onclick="loader()" />
+            
+        </div>
+    </body>
+</html>
+
+

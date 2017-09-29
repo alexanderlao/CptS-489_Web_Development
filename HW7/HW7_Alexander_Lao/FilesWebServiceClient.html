@@ -1,0 +1,85 @@
+<!-- Alexander Lao -->
+<!-- 11481444 -->
+<!-- 4/10/2017 -->
+<!-- FilesWebServiceClient.html -->
+
+<html>
+<script language="JavaScript">
+
+// For simplicity, use this hard-coded URL as the base URL for your 
+// requests. Use XMLHttpRequest and have the URL be g_serviceURL 
+// plus a concatenated portion as appropriate.
+var g_serviceURL = "http://localhost:8080/lists";
+var req = new XMLHttpRequest();
+
+function PageLoaded()
+{
+    // Your code here - dynamically generate page content
+    req.onreadystatechange = function()
+    {
+        if (this.readyState == 4 && this.status == 200)
+        {
+            // create the table
+            var body = document.getElementsByTagName("body")[0];
+            var table = document.createElement("table");
+            table.style.width = "100%";
+            table.setAttribute("border", "1");
+            var tableBody = document.createElement("tbody");
+
+            // create a new row
+            var tr = document.createElement("tr");
+
+            // create the table data for the name heading
+            var nameTableData = document.createElement("td");
+            nameTableData.setAttribute("bgcolor", "d3d3d3");
+            var boldName = document.createElement("b");
+            boldName.appendChild(document.createTextNode("Name"));
+            nameTableData.appendChild(boldName);
+
+            // create the table data for the size heading
+            var sizeTableData = document.createElement("td");
+            sizeTableData.setAttribute("bgcolor", "d3d3d3");
+            var boldSize = document.createElement("b");
+            boldSize.appendChild(document.createTextNode("Size"));
+            sizeTableData.appendChild(boldSize);
+
+            // create the table data for the last access heading
+            var lastAccessTableData = document.createElement("td");
+            lastAccessTableData.setAttribute("bgcolor", "d3d3d3");
+            var lastAccessBold = document.createElement("b");
+            lastAccessBold.appendChild(document.createTextNode("Last Access"));
+            lastAccessTableData.appendChild(lastAccessBold);
+
+            // add the data to the row
+            tr.appendChild(nameTableData);
+            tr.appendChild(sizeTableData);
+            tr.appendChild(lastAccessTableData);
+
+            // add the row to the table
+            table.appendChild(tr);
+
+            // retrieve the XML data
+            var xmlData = req.responseXML;
+            var files = xmlData.getElementsByTagName("*");
+
+            // loop through each file in the xml data
+            for (var i in files)
+            {
+                // create a new row
+                var newRow = document.createElement("tr");
+
+                // add the row to the table
+                table.appendChild(newRow);
+            }
+
+            body.appendChild(table)
+        }
+    };
+
+    req.open("GET", g_serviceURL);
+    req.send();
+}
+
+</script>
+<body onload="PageLoaded()"></body>
+</html>
